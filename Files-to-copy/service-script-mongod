@@ -1,0 +1,94 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          MongoDB
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: MongoDB startup script
+# Description:       MongoDB start stop status restart
+### END INIT INFO
+
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+DESC="MongoDB Service"
+NAME=mongod
+DAEMON=/usr/bin/$NAME
+DAEMON_ARGS="--config /etc/mongod.conf"
+PIDFILE=/var/run/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
+
+[ -x "$DAEMON" ] || exit 0
+. /lib/init/vars.sh
+. /lib/lsb/init-functions
+
+do_start()
+{
+        start-stop-daemon -Sbm -p $PIDFILE --exec $DAEMON -- $DAEMON_ARGS 
+	echo "Started $NAME"
+
+}
+
+do_stop()
+{
+	start-stop-daemon --stop --signal 2 -q --pidfile $PIDFILE --name $NAME
+	rm -f $PIDFILE
+	echo "Stopped $NAME"
+}
+
+do_status()
+{
+	psout=$(ps -ef |grep -v grep|grep -v status|grep mongod.conf)
+	if [ ! -z "$psout" ]; then
+		echo "$NAME is running"
+	else
+		echo "$NAME is NOT running"
+	fi
+}
+
+do_restart()
+{
+	start-stop-daemon --stop --signal 2 -q --pidfile $PIDFILE --name $NAME
+	rm -f $PIDFILE
+        start-stop-daemon -Sbm -p $PIDFILE --exec $DAEMON -- $DAEMON_ARGS 
+	echo "Restarted $NAME"
+}
+
+case "$1" in
+  start)
+	[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+	do_start
+	case "$?" in
+		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+	esac
+	;;
+  stop)
+	[ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
+	do_stop
+	case "$?" in
+		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+	esac
+	;;
+  status)
+        [ "$VERBOSE" != no ] && log_daemon_msg ""
+        do_status
+        case "$?" in
+                0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+                2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+        esac
+        ;;
+  restart)
+        [ "$VERBOSE" != no ] && log_daemon_msg ""
+        do_restart
+        case "$?" in
+                0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+                2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+        esac
+        ;;
+  *)
+	echo "Usage: $SCRIPTNAME {start|stop|status|restart}" >&2
+	exit 3
+	;;
+esac
+
+exit 0
+
